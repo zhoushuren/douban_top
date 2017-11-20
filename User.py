@@ -1,10 +1,30 @@
+# -*- coding: utf-8 -*-
 import requests
-from cookie import getCookies
+from lxml import html
+import urllib
+from requests.packages.urllib3.exceptions import InsecureRequestWarning,InsecurePlatformWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+requests.packages.urllib3.disable_warnings(InsecurePlatformWarning)
+
+
 class User():
 
     def  __init__(self):
-        self.cookie = '';
-        self.ssrequest = requests.session()
+        self.headers = {
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
+            'Connection': 'keep-alive',
+            'Host': 'accounts.douban.com',
+            'Referer': 'https://accounts.douban.com/login?source=group',
+            'Upgrade-Insecure-Requests': '1',
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:50.0) Gecko/20100101 Firefox/50.0',
+            'Content-Type': 'application/x-www-form-urlencoded',
+        }
+        self.session = requests.Session()
+        # self.session.headers.update(headers)
+
+        self.url = "https://www.douban.com/accounts/login"
 
     def getHeader(self):
         return self.header
@@ -14,6 +34,7 @@ class User():
 
     def getCookies(self,i):
         return getCookies(i);
+
 
     def doLogin(self,username,password):
         cookies = {
@@ -32,17 +53,12 @@ class User():
             'ps': 'y',
         }
 
-        headers = {
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Accept-Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
-            'Connection': 'keep-alive',
-            'Host': 'accounts.douban.com',
-            'Referer': 'https://accounts.douban.com/login?source=group',
-            'Upgrade-Insecure-Requests': '1',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.12; rv:50.0) Gecko/20100101 Firefox/50.0',
-            'Content-Type': 'application/x-www-form-urlencoded',
-        }
+        r = requests.get(self.url)
+        tree = html.fromstring(r.content)
+        captcha = tree.xpath('//*[@id="captcha_image"]/@src')  # 获取验证码图片的链接
+        captcha_id = tree.xpath('//*[@id="captcha_field"]/../input[2]/@value')  # 获取验证码id
+        print captcha
+        print captcha_id
 
         data = [
             ('source', 'group'),
@@ -52,19 +68,34 @@ class User():
             ('login', '\u767B\u5F55'),
         ]
 
+        if(len(captcha) > 0):
+            print captcha[0]
+            # urllib.urlretrieve(captcha[0],filename="./captcha.png")
+            ir = requests.get( captcha[0])
+            sz = open('cccccccc.jpg', 'wb').write(ir.content)
+            captcha_value = raw_input('查看captcha.png,有验证码请输入:')
+            solution = ('captcha-solution',captcha_value)
+            captchaID = ('captcha-id',captcha_id)
+            data.append(solution)
+            data.append(captchaID)
 
-        res = requests.post('https://accounts.douban.com/login', headers=headers, cookies=cookies, data=data)
+        res = requests.post('https://accounts.douban.com/login', headers=self.headers,data=data)
+
+
+
+
+
         print res
         print res.status_code;
-
-        if res.status_code == 200:
-            print 'login success cookies is :'
-            print res.cookies
-
-            print {c.name: c.value for c in res.cookies}
-            self.cookie = res.cookies;
-        else:
-            print 'login error'
+        #
+        # if res.status_code == 200:
+        #     print 'login success cookies is :'
+        #     print res.cookies
+        #
+        #     print {c.name: c.value for c in res.cookies}
+        #     self.cookie = res.cookies;
+        # else:
+        #     print 'login error'
 
 
 
