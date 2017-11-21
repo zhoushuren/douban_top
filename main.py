@@ -27,9 +27,9 @@ def main():
         user = User()
         user.doLogin(account.get('email'),account.get('password'));
 
-        # douban.setUserList(user);
+        douban.setUserList(user);
 
-    # douban.startTop('3333333333');
+    douban.startTop('3333333333');
 
 if __name__ == '__main__':
     main()
