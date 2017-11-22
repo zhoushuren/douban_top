@@ -53,8 +53,7 @@ class DoubanManager():
             except:
                 print '没有识别到,3秒后重新识别'
                 time.sleep(3);
-                self.setTop(url,comment, user)
-                code = 'nnnn'
+                return self.setTop(url,comment, user)
             data['captcha-solution'] = code
             data['captcha-id'] = re.search('id=(.*?)&', captcha_url).group(1)
 
