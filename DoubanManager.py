@@ -40,15 +40,43 @@ class DoubanManager():
 
         rval = user.session.get(url + '?start=5000#last', headers=headers)
         # 检验是否需要输入验证码?
+
+        mat = re.search('src=\"(.*?captcha.*?)\"', rval.text)
+        if mat:
+            #需要识别验证码
+            print '开始识别验证码...'
+            captcha_url = mat.group(1)
+            import identify_code
+            try:
+                code = identify_code.recognize_url(captcha_url)#识别验证码
+                print '识别到的验证码为:'+str(code)
+            except:
+                print '没有识别到,3秒后重新识别'
+                time.sleep(3);
+                self.setTop(url,comment, user)
+                code = 'nnnn'
+            data['captcha-solution'] = code
+            data['captcha-id'] = re.search('id=(.*?)&', captcha_url).group(1)
+
         ##寻找要提交的ck参数
         data['ck'] = re.search('ck=(\w+)', rval.text).group(1)
 
-        print url + 'add_comment'
-        print data
+        print '这次发的帖子是：' +  url + 'add_comment'
 
         res = user.session.post(url + 'add_comment', data=data,headers=headers)
-        print res
-        time.sleep(120);
+        if res.content != '':
+            xpathStr = '//*[@id="content"]/div/div[1]/div[3]/form/div[2]/text()'
+            codeErrorTree = html.fromstring(res.content)
+            codeError = codeErrorTree.xpath(xpathStr)
+
+            if len(codeError) > 0:
+                print codeError[0]
+                time.sleep(5);
+                return self.setTop(url, comment, user)
+            else:
+                print '发帖成功!'
+                time.sleep(5);
+                return
 
     def startTop(self,comment):
         userLength  = len(self.users);
@@ -56,6 +84,7 @@ class DoubanManager():
         for user in self.users:
             urls = self.getMyTopicUrls(user)
             print urls;
-            time.sleep(20);
+            time.sleep(10);
             for url in urls:
+                print '开始准备发帖子：' + url
                 self.setTop(url,comment,user);
